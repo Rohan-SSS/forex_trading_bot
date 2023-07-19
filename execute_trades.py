@@ -47,10 +47,10 @@ def close_order(symbol, order, lot, order_type):
 
     filling_type = mt5.symbol_info(symbol).filling_mode
 
-    if order_type == "buy":
+    if order_type == "sell":
         price = mt5.symbol_info_tick(symbol).bid
         type_mt5 = mt5.ORDER_TYPE_SELL
-    elif order_type == "sell":
+    elif order_type == "buy":
         price = mt5.symbol_info_tick(symbol).ask
         type_mt5 = mt5.ORDER_TYPE_BUY
     else:
@@ -68,7 +68,7 @@ def close_order(symbol, order, lot, order_type):
         "type_time": mt5.ORDER_TIME_GTC
     }
 
-    mt5.order_send(request)
+    return mt5.order_send(request)
 
 def change_sltp(row, sl, tp):
 
@@ -94,112 +94,8 @@ def change_sltp(row, sl, tp):
     return mt5.order_send(request)
 
 
-def modify_sltp(max_price, min_price):
-
-    summary = show_positions()
-    for i in range(summary.shape[0]):
-        row = summary.iloc[i]
-
-        symbol = row["symbol"]
-        if row["position"] == 1:
-            if symbol not in min_price.keys():
-                min_price[symbol] = row["price"]
-
-            current_price = row["price_current"]
-            opening_price = row["price"]
-            point = mt5.symbol_info(symbol).point
-
-            min_price[symbol] = min(current_price, min_price[symbol])
-
-            if current_price <= row["tp"] + (60 * point) and current_price <= min_price[symbol]:
-                time.sleep(3)
-                sl = row["sl"] - (60 * point)
-                tp = row["tp"] - (60 * point)
-                change_info = change_sltp(row, sl, tp)
-            
-            elif current_price <= opening_price - (240 * point) and current_price <= min_price[symbol]:
-                time.sleep(3)
-                sl = row["sl"] - 60 * point
-                tp = row["tp"] - 60 * point
-                change_info = change_sltp(row, sl, tp)
-
-            elif current_price <= opening_price - (180 * point) and current_price <= min_price[symbol]:
-                time.sleep(3)
-                close_order(symbol, row["ticket"], 0.1, "sell") 
-
-                time.sleep(3)
-                sl = row["sl"] - 90 * point
-                tp = row["tp"]
-                change_info = change_sltp(row, sl, tp)          
-
-            elif current_price <= opening_price - (150 * point) and current_price <= min_price[symbol]:
-                time.sleep(3)      
-                sl = opening_price
-                tp = row["tp"]
-                change_info = change_sltp(row, sl, tp)
-
-            elif current_price <= opening_price - (90 * point) and current_price <= min_price[symbol]:
-                time.sleep
-                sl = row["sl"] - (100 * point)
-                tp = row["tp"]
-                change_info = change_sltp(row, sl, tp)
-            else:
-                change_info = ()
-
-
-        if row["position"] == 0:
-            if symbol not in max_price.keys():
-                max_price[symbol] = row["price"]
-
-            current_price = row["price_current"]
-            opening_price = row["price"]
-            point = mt5.symbol_info(symbol).point
-
-            max_price[symbol] = max(current_price, max_price[symbol])
-
-            if current_price >= row["tp"] - (60 * point) and current_price >= max_price[symbol]:
-                time.sleep(3)
-                sl = row["sl"] + (60 * point)
-                tp = row["tp"] + (60 * point)
-                change_info = change_sltp(row, sl, tp)
-            
-            elif current_price >= opening_price + (240 * point) and current_price >= max_price[symbol]:
-                time.sleep(3)
-                sl = row["sl"] + 60 * point
-                tp = row["tp"] + 60 * point
-                change_info = change_sltp(row, sl, tp)
-
-            elif current_price >= opening_price + (180 * point) and current_price >= max_price[symbol]:
-                time.sleep(3)
-                change_info = close_order(symbol, row["ticket"], 0.1, "buy") 
-
-                time.sleep(3)
-                sl = row["sl"] + 90 * point
-                tp = row["tp"]
-                change_info = change_sltp(row, sl, tp)          
-
-            elif current_price >= opening_price + (150 * point) and current_price >= max_price[symbol]:
-                time.sleep(3)      
-                sl = opening_price
-                tp = row["tp"]
-                change_info = change_sltp(row, sl, tp)
-
-            elif current_price >= opening_price + (90 * point) and current_price >= max_price[symbol]:
-                time.sleep
-                sl = row["sl"] + (100 * point)
-                tp = row["tp"]
-                change_info = change_sltp(row, sl, tp)
-            else:
-                change_info = ()
-
-        if change_info == ():
-            return f"No change for {symbol}"
-        else:
-            return change_info
-
-
 def show_positions():
-    """ Return the current positions. Position=0 --> Buy """    
+    """ Return the current positions. Position=0 --> Buy Position=1 --> Sell"""    
     # Define the name of the columns that we will create
     columns = ["ticket", "position", "symbol", "volume", "magic", "profit", "price", "price_current", "tp", "sl","trade_size"]
 
@@ -211,7 +107,6 @@ def show_positions():
 
     # Loop to add each row in dataframe
     for element in list_current:
-        
         element_pandas = pd.DataFrame([element.ticket, element.type, element.symbol, element.volume, element.magic,
                                        element.profit, element.price_open, element.price_current, element.tp,
                                        element.sl, mt5.symbol_info(element.symbol).trade_contract_size],

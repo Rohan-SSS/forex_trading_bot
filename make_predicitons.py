@@ -158,11 +158,10 @@ def make_predictions(ticker):
     model = load_model('main-tanh-(128, 128, 128)-sgd-period7_(1kk).hdf5')
     predictions = model.predict(X)
 
-    final_predictions = [1 if x > 0.3 else -1 if x < -0.3 else 0 for x in predictions]
+    final_predictions = [1 if x > 0.4 else -1 if x < -0.4 else 0 for x in predictions]
 
     return final_predictions
 
-# if __name__ == '__main__':
-#     # Define Ticker
-#     ticker = "XAUUSD"
-#     print(make_predictions(ticker))
+def get_prediction(symbol):
+    predictions = make_predictions(symbol)
+    return predictions[-1]
