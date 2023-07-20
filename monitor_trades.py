@@ -1,5 +1,5 @@
 from make_predicitons import *
-from execute_trades import *
+from functions_library import *
 
 import time 
 import MetaTrader5 as mt5
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     symbols = ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
 
     while True:
-        summary = show_positions()
+        summary = get_positions()
         # Example summary
         # ticket           50543855506
         # position                   0

@@ -1,5 +1,5 @@
 from make_predicitons import *
-from execute_trades import *
+from functions_library import *
 
 from datetime import datetime, timedelta
 import time
@@ -7,80 +7,101 @@ import time
 import MetaTrader5 as mt5
 
 if __name__ == "__main__":
+    # Starting mt5 if not running in background already
     mt5.initialize()
+
+    # Print out account info
+    get_account_info()
+    print("-"*100)
     
-    symbols = ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
+    # Chosen symbols for trading
+        # Default : ["EURUSD", "GBPJPY", "USDJPY", "XAUUSD"]
+        # For checking trades every 15 mins ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
+    symbol_list = ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
 
-    lot = 0.02
+    # To change the lot sizing check functions library send_order()
+    # lot = 0.02 at 1:100 leverage
 
-    # Stores active trades information
-    taken_trades = {}
-
+    # To infinity and beyond xD
     while True:
-        for symbol in symbols:
-            prediction = get_prediction(symbol)
 
+        # Summary stores the currently active trades in a dict of dict
+        # {'XAUUSD': {'position': 1,
+        # 'symbol': 'XAUUSD',
+        # 'ticket': 50548212517,
+        # 'volume': 0.02,
+        # 'magic': 0,
+        # 'profit': 4.16,
+        # 'price': 1980.83,
+        # 'price_current': 1978.75,
+        # 'tp': 1977.83,
+        # 'sl': 1982.83,
+        # 'trade_size': 100.0}
+        summary = get_positions()
+
+        # For every symbol from list it checks for existing trades, execute new trades and close conflicting trades 
+        for symbol_element in symbol_list:
+            
+            # Initialize empty dict, which stores current symbol's active trade info 
+            #{'position': 1,
+            # 'symbol': 'XAUUSD',
+            # 'ticket': 50548212517,
+            # 'volume': 0.02,
+            # 'magic': 0,
+            # 'profit': 4.16,
+            # 'price': 1980.83,
+            # 'price_current': 1978.75,
+            # 'tp': 1977.83,
+            # 'sl': 1982.83,
+            # 'trade_size': 100.0}
+            current_symbol_info = None
+            
+            # Check if active trade exists, if so store info
+            try:
+                current_symbol_info = summary[symbol_element]
+            except:
+                current_symbol_info = None
+
+            # Get the prediction for current symbol -1 or 0 or 1
+            prediction = get_prediction(symbol_element)
+
+            """
+            Note: Trade position for a SELL in mt5 is 1 and for BUY is 0, makes no sense
+            """
+
+            # For a buy trade
             if prediction == 1:
-                print(f"Prediction for {symbol}: BUY")
-                if symbol in taken_trades and taken_trades[symbol]["order_type"] == "sell":
-                    close_trade = close_order(symbol, taken_trades[symbol]["order_id"], lot, "sell")
-                    print(f"\nTrade closed: {close_trade.request.symbol} {close_trade.order} at {close_trade.price}")
-
-                    del taken_trades[symbol]
-
-                    time.sleep(3)
-
-                    new_buy_trade = send_order(symbol, "buy")
-                    taken_trades[symbol] = {"order_type": "buy", "order_id": new_buy_trade.order}
-
-                    print(f"\nTrade executed: BUY {new_buy_trade.request.symbol} at {new_buy_trade.price}")
-
-                elif symbol in taken_trades and taken_trades[symbol]["order_type"] == "buy":
-                    pass
-                    
-                else:
-                    new_buy_trade = send_order(symbol, "buy")
-                    taken_trades[symbol] = {"order_type": "buy", "order_id": new_buy_trade.order}
-
-                    print(f"\nTrade executed: BUY {new_buy_trade.request.symbol} at {new_buy_trade.price}")
-
+                print(f"Prediction for {symbol_element}: BUY")  
+                
+                # Buy
+                take_buy(symbol_element, current_symbol_info)
+                
+            # For a sell trade
             if prediction == -1:
-                print(f"Prediction for {symbol}: SELL")
-                if symbol in taken_trades and taken_trades[symbol]["order_type"] == "buy":
-                    close_trade = close_order(symbol, taken_trades[symbol]["order_id"], lot, "buy")
-                    print(f"\nTrade closed: {close_trade.request.symbol} {close_trade.order} at {close_trade.price}")
-                    
-                    del taken_trades[symbol]
-                    
-                    time.sleep(3)
-
-                    new_sell_trade = send_order(symbol, "sell")
-                    taken_trades[symbol] = {"order_type": "sell", "order_id": new_sell_trade.order}
-
-                    print(f"\nTrade executed: SELL {new_sell_trade.request.symbol} at {new_sell_trade.price}")
-
-                elif symbol in taken_trades and taken_trades[symbol]["order_type"] == "sell":
-                    pass
-
-                else:
-                    new_sell_trade = send_order(symbol, "sell")
-                    taken_trades[symbol] = {"order_type": "sell", "order_id": new_sell_trade.order}
-
-                    print(f"\nTrade executed: SELL {new_sell_trade.request.symbol} at {new_sell_trade.price}")
-
+                print(f"Prediction for {symbol_element}: SELL")  
+                
+                # Sell
+                take_sell(symbol_element, current_symbol_info)
+                
+            # If prediction is 0 then stfd
             if prediction == 0:
-                print(f"\nNo Trade for {symbol}")
+                print(f"\nNo Trade for {symbol_element}")
 
-        print("\n", show_positions(), "\n", "-"*100, "\n", taken_trades, "\n", "-"*100, "\n")
+        # Print out the active positions 
+        print("\n", show_positions(), "\n", "-"*100, "\n")
 
-        current_time = datetime.utcnow()
-        minutes_to_add = (30 - current_time.minute % 30) % 30
-        next_candle_in = current_time + timedelta(minutes=minutes_to_add)
-        if next_candle_in < current_time:
-            next_candle_in += timedelta(minutes=30)
-        seconds_left = (next_candle_in - current_time).total_seconds()
-        print(f"sleeping for {seconds_left}")
-        time.sleep(seconds_left)
+        # Get sleep time till the current 30m candle closing
+        sleep_time = get_sleep_time()
+        print(f"sleeping for {sleep_time}")
+        time.sleep(sleep_time)
+
+# END
+
+# Features to add here :
+# --------------------------------------------------------------------------------------------
+# Remove market opening hours to prevent high volatilty
+# Change the time of sleep to a favourable delay
+#
 
 
 
