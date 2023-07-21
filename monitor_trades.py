@@ -7,14 +7,17 @@ import MetaTrader5 as mt5
 if __name__ == "__main__":
     mt5.initialize()
 
-    max_price = {}
-    min_price = {}
+    symbol_list = ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
 
-    symbols = ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
+    min_price = {}
+    max_price = {}
+
+    trade_stage = {}
 
     while True:
-        summary = get_positions()
-        # Example summary
+
+        active_trade_info = get_positions()
+        # Example 
         # ticket           50543855506
         # position                   0
         # symbol                USDCHF
@@ -28,100 +31,161 @@ if __name__ == "__main__":
         # trade_size          100000.0
         # profit %            0.001627
 
-        for i in range(summary.shape[0]):
-            current_trade = summary.iloc[i]
+        for symbol_element in symbol_list:
+            current_symbol_info = None
+            # Check if active trade exists, if so store info
+            try:
+                current_symbol_info = active_trade_info[symbol_element]
 
-            symbol = current_trade["symbol"]
-
-            if current_trade["position"] == 1:
-                if symbol not in min_price.keys():
-                    min_price[symbol] = current_trade["price"]
+            except:
+                current_symbol_info = None
                 
-                current_price = current_trade["price_current"]
-                opening_price = current_trade["price"]
-                point = mt5.symbol_info(symbol).point
+            if symbol_element not in trade_stage.keys() and symbol_element in active_trade_info:
+                trade_stage[symbol_element] = 0
+            elif symbol_element in trade_stage.keys() and symbol_element not in active_trade_info:
+                del trade_stage[symbol_element]
 
-                min_price[symbol] = min(current_price, min_price[symbol])
-                if current_price <= current_trade["tp"] + (60 * point) and current_price <= min_price[symbol]:
-                    time.sleep(3)
-                    sl = current_trade["sl"] - (60 * point)
-                    tp = current_trade["tp"] - (60 * point)
-                    change_info = change_sltp(current_trade, sl, tp)
+            if current_symbol_info != None and current_symbol_info['position'] == 1:
+                if symbol_element not in min_price.keys():
+                    min_price[symbol_element] = current_symbol_info['price']
+
+                current_price = current_symbol_info['price_current']
+                opening_price = current_symbol_info['price']
+
+                point = mt5.symbol_info(symbol_element).point
+
+                # if current_price < current_symbol_info["tp"] + (60 * point) and current_price < min_price[symbol_element]:
+                #     time.sleep(3)
+                #     sl = current_symbol_info["sl"] - (60 * point)
+                #     tp = current_symbol_info["tp"] - (60 * point)
+                #     change_info = change_sltp(current_symbol_info, sl, tp)
                 
-                elif current_price <= opening_price - (240 * point) and current_price <= min_price[symbol]:
+                if current_price < opening_price - (240 * point) and current_price < min_price[symbol_element]:
                     time.sleep(3)
-                    sl = current_trade["sl"] - 60 * point
-                    tp = current_trade["tp"] - 60 * point
-                    change_info = change_sltp(current_trade, sl, tp)
+                    sl = opening_price - (210 * point)
+                    tp = current_symbol_info["tp"] - 60 * point
 
-                elif current_price <= opening_price - (180 * point) and current_price <= min_price[symbol]:
+                    change_info = change_sltp(current_symbol_info, sl, tp)
+
+                elif current_price < opening_price - (210 * point) and current_price < min_price[symbol_element] and trade_stage[symbol_element] == 2:
+                    # time.sleep(3)
+                    # close_order(symbol_element, current_symbol_info["ticket"], 0.1, 1) 
+
                     time.sleep(3)
-                    close_order(symbol, current_trade["ticket"], 0.1, "sell") 
+                    sl = opening_price - (180 * point)
+                    tp = current_symbol_info["tp"]
 
-                    time.sleep(3)
-                    sl = current_trade["sl"] - 90 * point
-                    tp = current_trade["tp"]
-                    change_info = change_sltp(current_trade, sl, tp)          
+                    change_info = change_sltp(current_symbol_info, sl, tp)          
+                    trade_stage[symbol_element] = 3
 
-                elif current_price <= opening_price - (150 * point) and current_price <= min_price[symbol]:
+                elif current_price < opening_price - (150 * point) and current_price < min_price[symbol_element] and trade_stage[symbol_element] == 1:
                     time.sleep(3)      
-                    sl = opening_price
-                    tp = current_trade["tp"]
-                    change_info = change_sltp(current_trade, sl, tp)
+                    sl = opening_price - (90 * point)
+                    tp = current_symbol_info["tp"]
 
-                elif current_price <= opening_price - (90 * point) and current_price <= min_price[symbol]:
+                    change_info = change_sltp(current_symbol_info, sl, tp)
+                    trade_stage[symbol_element] = 2
+
+                elif current_price < opening_price - (90 * point) and current_price < min_price[symbol_element]and trade_stage[symbol_element] == 0:
                     time.sleep(3)
-                    sl = current_trade["sl"] - (100 * point)
-                    tp = current_trade["tp"]
-                    change_info = change_sltp(current_trade, sl, tp)
+                    close_trade = close_order(symbol_element, current_symbol_info["ticket"], 0.01, 0) 
+
+                    # If failed then try again, atm only once 
+                    if close_trade.order == 0:
+                        print(f"\nTrade couldn't be closed for {close_trade.request.symbol}, trying again...")
+
+                        time.sleep(3)
+                        close_trade = close_order(symbol_element, current_symbol_info['ticket'], 0.01, 0)
+
+                    # If failed again then dont close, fuck it
+                    if close_trade.order == 0:
+                        print(f"\nTrade couldn't be closed for {close_trade.request.symbol}, moving on...")
+                        print(close_trade)
+                    else:
+                        # Confirmation for closing the SELL trade
+                        print(f"\nTrade closed: {close_trade.request.symbol} {close_trade.order} at {close_trade.price}")
+
+                    time.sleep(3)
+                    sl = opening_price
+                    tp = current_symbol_info["tp"]
+
+                    change_info = change_sltp(current_symbol_info, sl, tp)
+                    trade_stage[symbol_element] = 1
                 else:
                     change_info = ()
 
-
-            if current_trade["position"] == 0:
-                if symbol not in max_price.keys():
-                    max_price[symbol] = current_trade["price"]
-
-                current_price = current_trade["price_current"]
-                opening_price = current_trade["price"]
-                point = mt5.symbol_info(symbol).point
-
-                max_price[symbol] = max(current_price, max_price[symbol])
-
-                if current_price >= current_trade["tp"] - (60 * point) and current_price >= max_price[symbol]:
-                    time.sleep(3)
-                    sl = current_trade["sl"] + (60 * point)
-                    tp = current_trade["tp"] + (60 * point)
-                    change_info = change_sltp(current_trade, sl, tp)
+                min_price[symbol_element] = min(current_price, min_price[symbol_element])
+            
+            if current_symbol_info != None and current_symbol_info['position'] == 0:
+                if symbol_element not in max_price.keys():
+                    max_price[symbol_element] = current_symbol_info['price']
                 
-                elif current_price >= opening_price + (240 * point) and current_price >= max_price[symbol]:
-                    time.sleep(3)
-                    sl = current_trade["sl"] + 60 * point
-                    tp = current_trade["tp"] + 60 * point
-                    change_info = change_sltp(current_trade, sl, tp)
+                current_price = current_symbol_info['price_current']
+                opening_price = current_symbol_info['price']
 
-                elif current_price >= opening_price + (180 * point) and current_price >= max_price[symbol]:
+                point = mt5.symbol_info(symbol_element).point
+
+                # if current_price < current_symbol_info["tp"] + (60 * point) and current_price < min_price[symbol_element]:
+                #     time.sleep(3)
+                #     sl = current_symbol_info["sl"] - (60 * point)
+                #     tp = current_symbol_info["tp"] - (60 * point)
+                #     change_info = change_sltp(current_symbol_info, sl, tp)
+                
+                if current_price > opening_price + (270 * point) and current_price > max_price[symbol_element] and trade_stage[symbol_element] == 3:
                     time.sleep(3)
-                    change_info = close_order(symbol, current_trade["ticket"], 0.1, "buy") 
+                    sl = opening_price - (240 * point)
+                    tp = current_symbol_info["tp"] - 60 * point
+
+                    change_info = change_sltp(current_symbol_info, sl, tp)
+
+                elif current_price > opening_price + (210 * point) and current_price > max_price[symbol_element] and trade_stage[symbol_element] == 2:
+                    # time.sleep(3)
+                    # close_order(symbol_element, current_symbol_info["ticket"], 0.1, 1) 
 
                     time.sleep(3)
-                    sl = current_trade["sl"] + 90 * point
-                    tp = current_trade["tp"]
-                    change_info = change_sltp(current_trade, sl, tp)          
+                    sl = opening_price - (180 * point)
+                    tp = current_symbol_info["tp"]
 
-                elif current_price >= opening_price + (150 * point) and current_price >= max_price[symbol]:
+                    change_info = change_sltp(current_symbol_info, sl, tp)          
+                    trade_stage[symbol_element] = 3
+
+                elif current_price > opening_price + (150 * point) and current_price > max_price[symbol_element] and trade_stage[symbol_element] == 1:
                     time.sleep(3)      
-                    sl = opening_price
-                    tp = current_trade["tp"]
-                    change_info = change_sltp(current_trade, sl, tp)
+                    sl = opening_price - (90 * point)
+                    tp = current_symbol_info["tp"]
 
-                elif current_price >= opening_price + (90 * point) and current_price >= max_price[symbol]:
+                    change_info = change_sltp(current_symbol_info, sl, tp)
+                    trade_stage[symbol_element] = 2
+
+                elif current_price > opening_price + (90 * point) and current_price > max_price[symbol_element]  and trade_stage[symbol_element] == 0:
                     time.sleep(3)
-                    sl = current_trade["sl"] + (100 * point)
-                    tp = current_trade["tp"]
-                    change_info = change_sltp(current_trade, sl, tp)
+                    close_trade = close_order(symbol_element, current_symbol_info['ticket'], 0.01, 1)
+
+                    # If failed then try again, atm only once 
+                    if close_trade.order == 0:
+                        print(f"\nTrade couldn't be closed for {close_trade.request.symbol}, trying again...")
+
+                        time.sleep(3)
+                        close_trade = close_order(symbol_element, current_symbol_info['ticket'], 0.01, 1)
+
+                    # If failed again then dont close, fuck it
+                    if close_trade.order == 0:
+                        print(f"\nTrade couldn't be closed for {close_trade.request.symbol}, moving on...")
+                        print(close_trade)
+                    else:
+                        # Confirmation for closing the SELL trade
+                        print(f"\nTrade closed: {close_trade.request.symbol} {close_trade.order} at {close_trade.price}")
+
+                    time.sleep(3)
+                    sl = opening_price
+                    tp = current_symbol_info["tp"]
+
+                    change_info = change_sltp(current_symbol_info, sl, tp)
+                    trade_stage[symbol_element] = 1
                 else:
                     change_info = ()
+
+                max_price[symbol_element] = max(current_price, max_price[symbol_element])
 
             if change_info == ():
                 continue

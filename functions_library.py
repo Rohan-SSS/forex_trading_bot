@@ -97,12 +97,12 @@ def close_order(symbol, ticket, lot, order_type):
     filling_type = mt5.symbol_info(symbol).filling_mode
 
     # If order needs to be sold, meaning closing buy order
-    if order_type == 0:
+    if order_type == 1:
         price = mt5.symbol_info_tick(symbol).bid
         type_mt5 = mt5.ORDER_TYPE_SELL
     
     # If order needs to be bought, meaning closing sell order
-    elif order_type == 1:
+    elif order_type == 0:
         price = mt5.symbol_info_tick(symbol).ask
         type_mt5 = mt5.ORDER_TYPE_BUY
 
@@ -256,10 +256,9 @@ def take_sell(symbol_element, current_symbol_info):
             print(f"\nTrade executed: SELL {new_sell_trade.request.symbol} at {new_sell_trade.price}")
 
 
+def change_sltp(current_symbol_info, sl, tp):
 
-def change_sltp(row, sl, tp):
-
-    symbol = row["symbol"]
+    symbol = current_symbol_info["symbol"]
 
     # Set filling mode
     filling_type = mt5.symbol_info(symbol).filling_mode
@@ -268,10 +267,10 @@ def change_sltp(row, sl, tp):
     request = {
     "action": mt5.TRADE_ACTION_SLTP,
     "symbol": symbol,
-    "position": row["ticket"],
-    "volume": row["volume"],
+    "position": current_symbol_info["ticket"],
+    "volume": current_symbol_info["volume"],
     "type": mt5.ORDER_TYPE_SELL,
-    "price": row["price"],
+    "price": current_symbol_info["price"],
     "sl": sl,
     "tp": tp,
     "type_filling": filling_type,
@@ -307,6 +306,7 @@ def show_positions():
         pass
     return summary
 
+
 def get_positions():
     """ Return the current positions. Position=0 --> Buy Position=1 --> Sell"""    
 
@@ -323,17 +323,16 @@ def get_positions():
             "symbol": element.symbol,
             "ticket": element.ticket,
             "volume": element.volume,
-            "magic": element.magic,
             "profit": element.profit,
             "price": element.price_open,
             "price_current": element.price_current,
             "tp": element.tp,
-            "sl": element.sl,
-            "trade_size": mt5.symbol_info(element.symbol).trade_contract_size
+            "sl": element.sl
         }
         summary[element.symbol] = trade_data
     
     return summary
+
 
 def get_sleep_time():
     current_time = dt.utcnow()
@@ -343,6 +342,7 @@ def get_sleep_time():
         next_candle_in += timedelta(minutes=30)
     seconds_left = (next_candle_in - current_time).total_seconds()
     return seconds_left
+
 
 def get_account_info():
     current_account_info = mt5.account_info()

@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # To infinity and beyond xD
     while True:
 
-        # Summary stores the currently active trades in a dict of dict
+        # active_trade_info stores the currently active trades in a dict of dict
         # {'XAUUSD': {'position': 1,
         # 'symbol': 'XAUUSD',
         # 'ticket': 50548212517,
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         # 'tp': 1977.83,
         # 'sl': 1982.83,
         # 'trade_size': 100.0}
-        summary = get_positions()
+        active_trade_info = get_positions()
 
         # For every symbol from list it checks for existing trades, execute new trades and close conflicting trades 
         for symbol_element in symbol_list:
@@ -58,7 +58,7 @@ if __name__ == "__main__":
             
             # Check if active trade exists, if so store info
             try:
-                current_symbol_info = summary[symbol_element]
+                current_symbol_info = active_trade_info[symbol_element]
             except:
                 current_symbol_info = None
 
