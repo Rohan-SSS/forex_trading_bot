@@ -97,12 +97,12 @@ def close_order(symbol, ticket, lot, order_type):
     filling_type = mt5.symbol_info(symbol).filling_mode
 
     # If order needs to be sold, meaning closing buy order
-    if order_type == 1:
+    if order_type == 0:
         price = mt5.symbol_info_tick(symbol).bid
         type_mt5 = mt5.ORDER_TYPE_SELL
     
     # If order needs to be bought, meaning closing sell order
-    elif order_type == 0:
+    elif order_type == 1:
         price = mt5.symbol_info_tick(symbol).ask
         type_mt5 = mt5.ORDER_TYPE_BUY
 
@@ -283,7 +283,7 @@ def change_sltp(current_symbol_info, sl, tp):
 def show_positions():
     """ Return the current positions. Position=0 --> Buy Position=1 --> Sell"""    
     # Define the name of the columns that we will create
-    columns = ["ticket", "position", "symbol", "volume", "magic", "profit", "price", "price_current", "tp", "sl","trade_size"]
+    columns = ["ticket", "position", "symbol", "volume", "profit", "price", "price_current", "tp", "sl"]
 
     # Go take the current open trades
     list_current = mt5.positions_get()
@@ -293,17 +293,12 @@ def show_positions():
 
     # Loop to add each row in dataframe
     for element in list_current:
-        element_pandas = pd.DataFrame([element.ticket, element.type, element.symbol, element.volume, element.magic,
+        element_pandas = pd.DataFrame([element.ticket, element.type, element.symbol, element.volume,
                                        element.profit, element.price_open, element.price_current, element.tp,
-                                       element.sl, mt5.symbol_info(element.symbol).trade_contract_size],
+                                       element.sl],
                                       index=columns).transpose()
         summary = pd.concat((summary, element_pandas), axis=0)
     
-    try:
-        summary["profit %"] = summary.profit / (summary.price * summary.trade_size * summary.volume)
-        summary = summary.reset_index(drop=True)
-    except:
-        pass
     return summary
 
 
