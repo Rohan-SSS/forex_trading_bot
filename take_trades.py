@@ -1,4 +1,4 @@
-from make_predicitons import *
+from model.make_predicitons import *
 from functions_library import *
 
 from datetime import datetime, timedelta
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     
     # Chosen symbols for trading
         # Default : ["EURUSD", "GBPJPY", "USDJPY", "XAUUSD"]
-        # For checking trades every 15 mins ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
+        # When checking trades every 15 mins ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
     symbol_list = ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
 
     # To change the lot sizing check functions library send_order()
@@ -26,34 +26,14 @@ if __name__ == "__main__":
     while True:
 
         # active_trade_info stores the currently active trades in a dict of dict
-        # {'XAUUSD': {'position': 1,
-        # 'symbol': 'XAUUSD',
-        # 'ticket': 50548212517,
-        # 'volume': 0.02,
-        # 'magic': 0,
-        # 'profit': 4.16,
-        # 'price': 1980.83,
-        # 'price_current': 1978.75,
-        # 'tp': 1977.83,
-        # 'sl': 1982.83,
-        # 'trade_size': 100.0}
+        # {'XAUUSD': {'position': 1,'symbol': 'XAUUSD','ticket': 50548212517,'volume': 0.02,'magic': 0,'profit': 4.16,'price': 1980.83,'price_current': 1978.75,'tp': 1977.83,'sl': 1982.83,'trade_size': 100.0}
         active_trade_info = get_positions()
 
         # For every symbol from list it checks for existing trades, execute new trades and close conflicting trades 
         for symbol_element in symbol_list:
             
             # Initialize empty dict, which stores current symbol's active trade info 
-            #{'position': 1,
-            # 'symbol': 'XAUUSD',
-            # 'ticket': 50548212517,
-            # 'volume': 0.02,
-            # 'magic': 0,
-            # 'profit': 4.16,
-            # 'price': 1980.83,
-            # 'price_current': 1978.75,
-            # 'tp': 1977.83,
-            # 'sl': 1982.83,
-            # 'trade_size': 100.0}
+            # {'position': 1,'symbol': 'XAUUSD','ticket': 50548212517,'volume': 0.02,'magic': 0,'profit': 4.16,'price': 1980.83,'price_current': 1978.75,'tp': 1977.83,'sl': 1982.83,'trade_size': 100.0}
             current_symbol_info = None
             
             # Check if active trade exists, if so store info
@@ -85,7 +65,7 @@ if __name__ == "__main__":
                 
             # If prediction is 0 then stfd
             if prediction == 0:
-                print(f"\nNo Trade for {symbol_element}")
+                print(f"No Trade for {symbol_element}\n")
 
         # Print out the active positions 
         print("\n", show_positions(), "\n", "-"*100, "\n")

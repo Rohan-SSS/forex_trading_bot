@@ -123,8 +123,87 @@ def close_order(symbol, ticket, lot, order_type):
     return mt5.order_send(request)
 
 
+def send_order_with_retry(symbol_element, order_type, attempts=2, sleep_time=3):
+    """This function retries failed buy/sell orders 
+
+    Args:
+        symbol_element (str): symbol
+        order_type (int): 0: BUY; 1: SELL
+        attempts (int, optional): Number of attempts. Defaults to 2.
+        sleep_time (int, optional): sleep time. Defaults to 3.
+    """    
+
+    for attempt in range(attempts):
+        time.sleep(sleep_time)
+        
+        # Sends a new order
+        new_trade = send_order(symbol_element, order_type)
+
+        # If failed then it will try again
+        # Buy order
+        if order_type == 0:
+            if new_trade.order == 0:
+                print(f"\nAttempt {attempt + 1}: BUY trade not executed for {new_trade.request.symbol}, trying again...")
+            else:
+                print(f"\nTrade executed: BUY {new_trade.request.symbol} at {new_trade.price}")
+                break
+
+        # Sell order
+        if order_type == 1:
+            if new_trade.order == 0:
+                print(f"\nAttempt {attempt + 1}: SELL trade not executed for {new_trade.request.symbol}, trying again...")
+            else:
+                print(f"\nTrade executed: SELL {new_trade.request.symbol} at {new_trade.price}")
+                break
+
+    # If failed after 2 attempts then leave it be            
+    else:
+        print(f"\nAll attempts failed. Trade for {new_trade.request.symbol} couldn't be executed.")
+    # Need to address this later
+
+
+def close_order_with_retry(symbol_element, ticket, lot_size, order_type, attempts=2, sleep_time=3):
+    """Closes failed orders
+
+    Args:
+        symbol_element (str): symbol
+        ticket (int): order id
+        lot_size (float): lot to close
+        order_type (int): 0: Buy; 1:Sell 
+        attempts (int, optional): number of attempts. Defaults to 2.
+        sleep_time (int, optional): sleepy. Defaults to 3.
+    """    
+
+    for attempt in range(attempts):
+        time.sleep(sleep_time)
+
+        # Close order
+        close_trade = close_order(symbol_element, ticket, lot_size, order_type)
+
+        # If failed then it will try again
+        # Buy order
+        if order_type == 0:
+            if close_trade.order == 0:
+                print(f"\nAttempt {attempt + 1}: Trade couldn't be closed for {close_trade.request.symbol}, trying again...")
+            else:
+                print(f"\nTrade closed: {close_trade.request.symbol} {close_trade.order} at {close_trade.price}")
+                break
+        # SEll order
+        if order_type == 1:
+            if close_order.order == 0:
+                print(f"\nAttempt {attempt + 1}: Trade couldn't be closed for {close_trade.request.symbol}, trying again...")
+            else:
+                print(f"\nTrade closed: {close_trade.request.symbol} {close_trade.order} at {close_trade.price}")
+                break
+
+    # If failed after 2 attempts then leave it be 
+    else:
+        print(f"\nAll attempts failed. Trade couldn't be closed for {close_trade.request.symbol}.")
+    # Need to address this later
+
+
 def take_buy(symbol_element, current_symbol_info): 
-    """Main function for carrying out buy orders, and closing sells
+    """Main function for carrying out buy orders, and closing existing sells
 
     Args:
         symbol_element (str): currency pair
@@ -134,42 +213,15 @@ def take_buy(symbol_element, current_symbol_info):
     # check if there is an existing trade for the current symbol which is a SELL 
     if current_symbol_info != None and current_symbol_info['position'] == 1:
 
-        # Sleep is required as mt5 sometimes doesnt execute actions
         time.sleep(3)
 
         # Close the existing SELL trade, 1 here denote that a SELL trade needs closing
-        close_trade = close_order(symbol_element, current_symbol_info['ticket'], current_symbol_info['volume'], 1)
-
-        # If failed then try again, atm only once 
-        if close_trade.order == 0:
-            print(f"\nTrade couldn't be closed for {close_trade.request.symbol}, trying again...")
-
-            time.sleep(3)
-            close_trade = close_order(symbol_element, current_symbol_info['ticket'], current_symbol_info['volume'], 1)
-
-        # If failed again then dont close, fuck it
-        if close_trade.order == 0:
-            print(f"\nTrade couldn't be closed for {close_trade.request.symbol}, moving on...")
-        else:
-            # Confirmation for closing the SELL trade
-            print(f"\nTrade closed: {close_trade.request.symbol} {close_trade.order} at {close_trade.price}")
-
+        close_order_with_retry(symbol_element, current_symbol_info['ticket'], current_symbol_info['volume'], 1)
+        
         time.sleep(3)
 
         # Now execute a BUY trade as predicted by the model, BUY == 0
-        new_buy_trade = send_order(symbol_element, 0)
-        
-        # Try again if failed
-        if new_buy_trade.order == 0:
-            time.sleep(3)
-            print(f"\nBUY trade not executed: {new_buy_trade.request.symbol} trying again...")
-            new_buy_trade = send_order(symbol_element, 0)
-
-        if new_buy_trade.order == 0:
-            print(f"\nTrade for {new_buy_trade.request.symbol} failed, moving on...")
-        else:
-            # Confirmation
-            print(f"\nTrade executed: BUY {new_buy_trade.request.symbol} at {new_buy_trade.price}")
+        send_order_with_retry(symbol_element, 0)
 
     # If the pred = 1 and there is already a BUY trade active for the symbol then dont do anything
     elif current_symbol_info != None and current_symbol_info['position'] == 0:
@@ -180,21 +232,11 @@ def take_buy(symbol_element, current_symbol_info):
         time.sleep(3)
 
         # New trade executed, BUY == 0
-        new_buy_trade = send_order(symbol_element, 0)
-
-        if new_buy_trade.order == 0:
-            time.sleep(3)
-            print(f"\nBUY trade not executed: {new_buy_trade.request.symbol} trying again...")
-            new_buy_trade = send_order(symbol_element, 0)
-
-        if new_buy_trade.order == 0:
-            print(f"\nTrade for {new_buy_trade.request.symbol} failed, moving on...")
-        else:
-            print(f"\nTrade executed: BUY {new_buy_trade.request.symbol} at {new_buy_trade.price}")
+        send_order_with_retry(symbol_element, 0)
             
 
 def take_sell(symbol_element, current_symbol_info):
-    """Main function for carrying out sell orders, and closing buys
+    """Main function for carrying out sell orders, and closing existing buys
 
     Args:
         symbol_element (str): currency pair
@@ -207,33 +249,12 @@ def take_sell(symbol_element, current_symbol_info):
         time.sleep(3)
 
         # Close the existing BUY trade, 0 here denote that a BUY trade needs closing
-        close_trade = close_order(symbol_element, current_symbol_info['ticket'], current_symbol_info['volume'], 0)
+        close_order_with_retry(symbol_element, current_symbol_info['ticket'], current_symbol_info['volume'], 0)
         
-        # Try again if failed
-        if close_trade.order == 0:
-            print(f"\nTrade couldn't be closed for {close_trade.request.symbol}, trying again...")
-            time.sleep(3)
-            close_trade = close_order(symbol_element, current_symbol_info['ticket'], current_symbol_info['volume'], 0)
-
-        # ef it
-        if close_trade.order == 0:
-            print(f"\nTrade couldn't be closed for {close_trade.request.symbol}, moving on...")
-        else:   
-            print(f"\nTrade closed: {close_trade.request.symbol} {close_trade.order} at {close_trade.price}")
-
         time.sleep(3)
 
         # Execute a sell trade
-        new_sell_trade = send_order(symbol_element, 1)
-
-        if new_sell_trade.order == 0:
-            print(f"\nSELL trade not executed: {new_sell_trade.request.symbol} Trying again...")
-            new_sell_trade = send_order(symbol_element, 1)
-
-        if new_sell_trade.order == 0:
-            print(f"\nSELL trade for {new_sell_trade.request.symbol} Failed, moving on...")
-        else:
-            print(f"\nTrade executed: SELL {new_sell_trade.request.symbol} at {new_sell_trade.price}")
+        send_order_with_retry(symbol_element, 1)
 
     # If the pred = -1 and there is already a SELL trade active for the symbol then dont do anything
     elif current_symbol_info != None and current_symbol_info['position'] == 1:
@@ -244,16 +265,7 @@ def take_sell(symbol_element, current_symbol_info):
         time.sleep(3)
 
         # New trade executed, SELL == 1
-        new_sell_trade = send_order(symbol_element, 1)
-        
-        if new_sell_trade.order == 0:
-            print(f"\nSELL trade not executed: {new_sell_trade.request.symbol} Trying again...")
-            new_sell_trade = send_order(symbol_element, 1)
-
-        if new_sell_trade.order == 0:
-            print(f"\nSELL trade for {new_sell_trade.request.symbol} Failed, moving on...")
-        else:
-            print(f"\nTrade executed: SELL {new_sell_trade.request.symbol} at {new_sell_trade.price}")
+        send_order_with_retry(symbol_element, 1)
 
 
 def change_sltp(current_symbol_info, sl, tp):
@@ -280,29 +292,8 @@ def change_sltp(current_symbol_info, sl, tp):
     return mt5.order_send(request)
 
 
-def show_positions():
-    """ Return the current positions. Position=0 --> Buy Position=1 --> Sell"""    
-    # Define the name of the columns that we will create
-    columns = ["ticket", "position", "symbol", "volume", "profit", "price", "price_current", "tp", "sl"]
-
-    # Go take the current open trades
-    list_current = mt5.positions_get()
-
-    # Create a empty dataframe
-    summary = pd.DataFrame()
-
-    # Loop to add each row in dataframe
-    for element in list_current:
-        element_pandas = pd.DataFrame([element.ticket, element.type, element.symbol, element.volume,
-                                       element.profit, element.price_open, element.price_current, element.tp,
-                                       element.sl],
-                                      index=columns).transpose()
-        summary = pd.concat((summary, element_pandas), axis=0)
-    
-    return summary
-
-
 def get_positions():
+
     """ Return the current positions. Position=0 --> Buy Position=1 --> Sell"""    
 
     # Get the current open trades
@@ -329,7 +320,34 @@ def get_positions():
     return summary
 
 
+def show_positions():
+    """ Return the current positions. Position=0 --> Buy Position=1 --> Sell"""    
+    # Define the name of the columns that we will create
+    columns = ["ticket", "position", "symbol", "volume", "profit", "price", "price_current", "tp", "sl"]
+
+    # Go take the current open trades
+    list_current = mt5.positions_get()
+
+    # Create a empty dataframe
+    summary = pd.DataFrame()
+
+    # Loop to add each row in dataframe
+    for element in list_current:
+        element_pandas = pd.DataFrame([element.ticket, element.type, element.symbol, element.volume,
+                                       element.profit, element.price_open, element.price_current, element.tp,
+                                       element.sl],
+                                      index=columns).transpose()
+        summary = pd.concat((summary, element_pandas), axis=0)
+    
+    return summary
+
+
 def get_sleep_time():
+    """This function gives the time to sleep till next candle
+
+    Returns:
+        seconds_left(int): time
+    """    
     current_time = dt.utcnow()
     minutes_to_add = (30 - current_time.minute % 30) % 30
     next_candle_in = current_time + timedelta(minutes=minutes_to_add)
@@ -340,6 +358,8 @@ def get_sleep_time():
 
 
 def get_account_info():
+    """Prints the current account info
+    """    
     current_account_info = mt5.account_info()
     print("------------------------------------------------------------------")
     print(f"Login: {mt5.account_info().login} \tserver: {mt5.account_info().server}")
