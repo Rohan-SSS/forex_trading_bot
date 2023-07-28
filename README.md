@@ -3,7 +3,8 @@
 ## Project Description
 
 The HFT bot processes real-time market data from Meta Trader 5 desktop application to make predictions using multiple ML model for different symbols as a single model fails to work with every symbol.
-> Note: Only a reference model is provided here which is working for all symbols, So dont trade with real $.
+> ** Note: Only a reference model is provided here which is working for all symbols, So dont trade with real $. **
+
 Using the predictions, the bot execute trades and constantly monitors the active trades. If there are active trades which contradicts the prediction, those are closed and new trades according to predictions are taken.
 Also it has a trailing SL, which books partials and tries to ensure profits and minimize losses.
 
