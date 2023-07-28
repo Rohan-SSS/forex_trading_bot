@@ -56,8 +56,8 @@ def ema_signal(df):
 
     # Create the signal column
     signal = pd.Series(0, index=df.index)
-    signal[(diff100 > 0.003) & (diff200 > 0.002)] = 1
-    signal[(diff100 < -0.003) & (diff200 < -0.002)] = -1
+    signal[(diff100 > 0.0025) & (diff200 > 0.002)] = 1
+    signal[(diff100 < -0.0025) & (diff200 < -0.002)] = -1
     df['ema_signal'] = signal
     return df
 
@@ -68,8 +68,8 @@ def generate_signal_vwap(df):
     """Generates the signal for VWAP"""
 
     signal = pd.Series(data=np.zeros(len(df)), index=df.index)
-    signal[df['close'] > (df['vwap'] + (0.001 * df['close']))] = 1
-    signal[df['close'] < (df['vwap'] + (0.001 * df['close']))] = -1
+    signal[df['close'] > (df['vwap'] + (0.0005 * df['close']))] = 1
+    signal[df['close'] < (df['vwap'] - (0.0005 * df['close']))] = -1
     return signal.astype(int)
 
 def vwap_signal(df, label='vwap', window=3, fillna=True):

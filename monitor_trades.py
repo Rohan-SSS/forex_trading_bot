@@ -1,4 +1,3 @@
-from make_predicitons import *
 from functions_library import *
 
 import time 
@@ -19,17 +18,7 @@ if __name__ == "__main__":
     while True:
 
         active_trade_info = get_positions()
-        # {'XAUUSD': {'position': 1,
-        # 'symbol': 'XAUUSD',
-        # 'ticket': 50548212517,
-        # 'volume': 0.02,
-        # 'magic': 0,
-        # 'profit': 4.16,
-        # 'price': 1980.83,
-        # 'price_current': 1978.75,
-        # 'tp': 1977.83,
-        # 'sl': 1982.83,
-        # 'trade_size': 100.0}
+        # {'XAUUSD': {'position': 1,'symbol': 'XAUUSD','ticket': 50548212517,'volume': 0.02,'magic': 0,'profit': 4.16,'price': 1980.83,'price_current': 1978.75,'tp': 1977.83,'sl': 1982.83,'trade_size': 100.0}
 
         for symbol_element in symbol_list:
 

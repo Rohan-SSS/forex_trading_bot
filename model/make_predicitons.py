@@ -8,7 +8,7 @@ import MetaTrader5 as mt5
 from tensorflow import keras
 from keras.models import load_model
 
-from ta_functions import *
+from model.ta_functions import *
 
 # Getting data for making predictions
 def get_ticker_data(ticker):
