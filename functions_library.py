@@ -292,29 +292,8 @@ def change_sltp(current_symbol_info, sl, tp):
     return mt5.order_send(request)
 
 
-def show_positions():
-    """ Return the current positions. Position=0 --> Buy Position=1 --> Sell"""    
-    # Define the name of the columns that we will create
-    columns = ["ticket", "position", "symbol", "volume", "profit", "price", "price_current", "tp", "sl"]
-
-    # Go take the current open trades
-    list_current = mt5.positions_get()
-
-    # Create a empty dataframe
-    summary = pd.DataFrame()
-
-    # Loop to add each row in dataframe
-    for element in list_current:
-        element_pandas = pd.DataFrame([element.ticket, element.type, element.symbol, element.volume,
-                                       element.profit, element.price_open, element.price_current, element.tp,
-                                       element.sl],
-                                      index=columns).transpose()
-        summary = pd.concat((summary, element_pandas), axis=0)
-    
-    return summary
-
-
 def get_positions():
+
     """ Return the current positions. Position=0 --> Buy Position=1 --> Sell"""    
 
     # Get the current open trades
@@ -337,6 +316,28 @@ def get_positions():
             "sl": element.sl
         }
         summary[element.symbol] = trade_data
+    
+    return summary
+
+
+def show_positions():
+    """ Return the current positions. Position=0 --> Buy Position=1 --> Sell"""    
+    # Define the name of the columns that we will create
+    columns = ["ticket", "position", "symbol", "volume", "profit", "price", "price_current", "tp", "sl"]
+
+    # Go take the current open trades
+    list_current = mt5.positions_get()
+
+    # Create a empty dataframe
+    summary = pd.DataFrame()
+
+    # Loop to add each row in dataframe
+    for element in list_current:
+        element_pandas = pd.DataFrame([element.ticket, element.type, element.symbol, element.volume,
+                                       element.profit, element.price_open, element.price_current, element.tp,
+                                       element.sl],
+                                      index=columns).transpose()
+        summary = pd.concat((summary, element_pandas), axis=0)
     
     return summary
 
