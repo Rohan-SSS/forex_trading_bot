@@ -46,7 +46,7 @@ def make_predictions(ticker):
     price_change(df)
 
 
-    # Adding the trend
+    # Adding the trend for testing
     get_trend(df)
 
 
@@ -159,6 +159,9 @@ def make_predictions(ticker):
     predictions = model.predict(X)
 
     final_predictions = [1 if x > 0.4 else -1 if x < -0.4 else 0 for x in predictions]
+
+    # Testing
+    
 
     return final_predictions
 
