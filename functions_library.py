@@ -35,8 +35,8 @@ def send_order(symbol, order_type):
     lot = 0.02
     deviation = 10
 
-    # MT5 filling mode for order request
-    filling_type = mt5.symbol_info(symbol).filling_mode
+    # MT5 filling mode for order request, not needed in exness
+    # filling_type = mt5.symbol_info(symbol).filling_mode
 
     # Point for the symbol, 100 --> 10 pips
     point = mt5.symbol_info(symbol).point
@@ -69,7 +69,7 @@ def send_order(symbol, order_type):
         "deviation": deviation,
         "tp": tp,
         "sl": sl,
-        "type_filling": filling_type,
+        # "type_filling": filling_type,
         "type_time": mt5.ORDER_TIME_GTC
     }
 
@@ -94,7 +94,7 @@ def close_order(symbol, ticket, lot, order_type):
     """    
     deviation = 10
 
-    filling_type = mt5.symbol_info(symbol).filling_mode
+    # filling_type = mt5.symbol_info(symbol).filling_mode
 
     # If order needs to be sold, meaning closing buy order
     if order_type == 0:
@@ -115,7 +115,7 @@ def close_order(symbol, ticket, lot, order_type):
         "type": type_mt5,
         "price": price,
         "deviation": deviation,
-        "type_filling": filling_type,
+        # "type_filling": filling_type,
         "type_time": mt5.ORDER_TIME_GTC
     }
 

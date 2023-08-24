@@ -1,4 +1,5 @@
 from model.make_predicitons import *
+from strategy.apr_one import *
 from functions_library import *
 
 from datetime import datetime, timedelta
@@ -17,7 +18,7 @@ if __name__ == "__main__":
     # Chosen symbols for trading
         # Default : ["EURUSD", "GBPJPY", "USDJPY", "XAUUSD"]
         # When checking trades every 15 mins ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
-    symbol_list = ["EURUSD", "GBPJPY", "USDJPY", "USDCAD", "XAUUSD", "USDCHF"]
+    symbol_list = ["EURUSDm", "GBPJPYm", "USDJPYm", "USDCADm", "XAUUSDm", "USDCHFm"]
 
     # To change the lot sizing check functions library send_order()
     # lot = 0.02 at 1:100 leverage
@@ -42,11 +43,14 @@ if __name__ == "__main__":
             except:
                 current_symbol_info = None
 
-            # Get the prediction for current symbol -1 or 0 or 1
-            prediction = get_prediction(symbol_element)
-
+            # Get the prediction for current symbol -1 or 0 or 1 using ML model
+            # prediction = get_prediction(symbol_element)
+            
+            # Get the prediction for current symbol -1 or 0 or 1 using strat
+            prediction = get_prediction_str(symbol_element)
+            
             """
-            Note: Trade position for a SELL in mt5 is 1 and for BUY is 0, makes no sense
+            Note: Trade position for a SELL in mt5 is 1 and for BUY is 0
             """
 
             # For a buy trade
