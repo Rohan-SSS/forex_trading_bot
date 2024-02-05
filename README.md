@@ -1,8 +1,8 @@
-# High Frequency Trading Bot
+# Forex Trading Bot
 
 ## Project Description
 
-The HFT bot processes real-time market data from Meta Trader 5 desktop application to make predictions using multiple ML model for different symbols as a single model fails to work with every symbol.
+The bot processes real-time market data from Meta Trader 5 desktop application to make predictions using multiple ML model for different symbols as a single model fails to work with every symbol.
 > ** Note: Only a reference model is provided here which is working for all symbols, So dont trade with real $. **
 
 Using the predictions, the bot execute trades and constantly monitors the active trades. If there are active trades which contradicts the prediction, those are closed and new trades according to predictions are taken.
@@ -12,8 +12,8 @@ Also it has a trailing SL, which books partials and tries to ensure profits and 
 
 Clone the project
 ```bash
-git clone https://github.com/Rohan-SSS/high_frequency_trading_bot
-cd high_frequency_trading_bot
+git clone https://github.com/Rohan-SSS/forex_trading_bot
+cd forex_trading_bot
 ```
 
 Create virtual environment and install dependencies
